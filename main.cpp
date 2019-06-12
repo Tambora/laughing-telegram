@@ -11,7 +11,6 @@ void fileIO() {
 	freopen("output.ppm", "w", stdout);
 }
 
-
 uint32_t xor128(void) {
 	static uint32_t x = 123456789;
 	static uint32_t y = 362436069;
@@ -25,7 +24,6 @@ uint32_t xor128(void) {
 	return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
 }
 
-//TODO: add static or const INTMAX === 2147483647
 float random0To1() { return (float)(xor128() >> 1) / INT_MAX; }
 
 float InvSqrt(float x) {
@@ -39,7 +37,6 @@ float InvSqrt(float x) {
 
 float Sqrt(float x) { return 1/InvSqrt(x); }
 
-
 vec3 random_in_unit_sphere() {
 	vec3 p;
 	do {
@@ -47,7 +44,6 @@ vec3 random_in_unit_sphere() {
 	} while (p.squared_Length() >= 1.0);
 	return p;
 }
-
 
 vec3 color(const ray &r, hitable *world) {
 	hit_record rec;
