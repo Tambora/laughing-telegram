@@ -1,3 +1,3 @@
 ## Ray-tracer.
 
-Implementation of the Raytracing miniseries by Peter Shirley.
+Implementation of the Ray Tracing miniseries by Peter Shirley.
