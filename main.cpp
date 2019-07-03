@@ -1,16 +1,20 @@
 #include <iostream>
-#include <bits/stdc++.h>
-
+#include <stdio.h>
+#include <string.h>
 #include "sphere.h"
 #include "hitable_list.h"
 #include "float.h"
 #include "camera.h"
 #include "material.h"
 
-void fileIO() {
-	freopen("input.txt", "r", stdin);
-	freopen("output.ppm", "w", stdout);
-}
+const int bytesPerPixel = 3; /// red, green, blue
+const int fileHeaderSize = 14;
+const int infoHeaderSize = 40;
+
+void generateBitmapImage(unsigned char *image, int height, int width, int pitch, const char* imageFileName);
+unsigned char* createBitmapFileHeader(int height, int width, int pitch, int paddingSize);
+unsigned char* createBitmapInfoHeader(int height, int width);
+
 
 vec3 color(const ray &r, hitable *world, int depth) {
 	hit_record rec;
@@ -20,12 +24,12 @@ vec3 color(const ray &r, hitable *world, int depth) {
 		if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
 			return attenuation * color(scattered, world, depth + 1);
 		} else {
-			return vec3(0.2, 0.2, 1);
+			return vec3(0,0,0);
 		}
 	} else {
 		vec3 unit_direction = unit_vector(r.direction());
 		float t = 0.5 * (unit_direction.y() + 1.0);
-		return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+        return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
 	}
 }
 
@@ -57,11 +61,19 @@ hitable *random_scene() {
 }
 
 int main(int argc, char const *argv[]) {
-	fileIO();
-	int nx = 128;
-	int ny = 72;
-	int ns = 50;
-	std::cout << "P3\n" << nx << " " << ny << "\n255\n";
+	int nx = 320;
+	int ny = 180;
+	int ns = 10;
+
+
+    int w = nx; /* Put here what ever width you want */
+    int h = ny; /* Put here what ever height you want */
+    int red[w][h]; 
+    int green[w][h];
+    int blue[w][h];
+
+    unsigned char img[h][w][bytesPerPixel];
+
 	hitable *world;
 	world = random_scene();
     vec3 lookfrom(13,2,3);
@@ -83,15 +95,92 @@ int main(int argc, char const *argv[]) {
 
 			col /= float(ns);
 			col = vec3(almostSqrt(col[0]), almostSqrt(col[1]), almostSqrt(col[2]));
-			int ir = int(255.99 * col[0]);
-			int ig = int(255.99 * col[1]);
-			int ib = int(255.99 * col[2]);
+			img[j][i][2] = (unsigned char)(int)(255 * col[0]);
+			img[j][i][1] = (unsigned char)(int)(255 * col[1]);
+			img[j][i][0] = (unsigned char)(int)(255 * col[2]);
 
-			std::cout << ir << " " << ig << " " << ib << "\n";
+
 		}
 	}
+
+	generateBitmapImage((unsigned char *)img, h, w, bytesPerPixel*w, "img.bmp");
+
 	return 0;
 }
+
+void generateBitmapImage(unsigned char *image, int height, int width, int pitch, const char* imageFileName) {
+
+    unsigned char padding[3] = { 0, 0, 0 };
+    int paddingSize = (4 - (/*width*bytesPerPixel*/ pitch) % 4) % 4;
+
+    unsigned char* fileHeader = createBitmapFileHeader(height, width, pitch, paddingSize);
+    unsigned char* infoHeader = createBitmapInfoHeader(height, width);
+    FILE* imageFile = fopen(imageFileName, "wb");
+
+    fwrite(fileHeader, 1, fileHeaderSize, imageFile);
+    fwrite(infoHeader, 1, infoHeaderSize, imageFile);
+
+    int i;
+    for (i = 0; i < height; i++) {
+        fwrite(image + (i*pitch /*width*bytesPerPixel*/), bytesPerPixel, width, imageFile);
+        fwrite(padding, 1, paddingSize, imageFile);
+    }
+
+    fclose(imageFile);
+}
+
+unsigned char* createBitmapFileHeader(int height, int width, int pitch, int paddingSize) {
+    int fileSize = fileHeaderSize + infoHeaderSize + (/*bytesPerPixel*width*/pitch + paddingSize) * height;
+
+    static unsigned char fileHeader[] = {
+        0,0, /// signature
+        0,0,0,0, /// image file size in bytes
+        0,0,0,0, /// reserved
+        0,0,0,0, /// start of pixel array
+    };
+
+    fileHeader[0] = (unsigned char)('B');
+    fileHeader[1] = (unsigned char)('M');
+    fileHeader[2] = (unsigned char)(fileSize);
+    fileHeader[3] = (unsigned char)(fileSize >> 8);
+    fileHeader[4] = (unsigned char)(fileSize >> 16);
+    fileHeader[5] = (unsigned char)(fileSize >> 24);
+    fileHeader[10] = (unsigned char)(fileHeaderSize + infoHeaderSize);
+
+    return fileHeader;
+}
+
+unsigned char* createBitmapInfoHeader(int height, int width) {
+    static unsigned char infoHeader[] = {
+        0,0,0,0, /// header size
+        0,0,0,0, /// image width
+        0,0,0,0, /// image height
+        0,0, /// number of color planes
+        0,0, /// bits per pixel
+        0,0,0,0, /// compression
+        0,0,0,0, /// image size
+        0,0,0,0, /// horizontal resolution
+        0,0,0,0, /// vertical resolution
+        0,0,0,0, /// colors in color table
+        0,0,0,0, /// important color count
+    };
+
+    infoHeader[0] = (unsigned char)(infoHeaderSize);
+    infoHeader[4] = (unsigned char)(width);
+    infoHeader[5] = (unsigned char)(width >> 8);
+    infoHeader[6] = (unsigned char)(width >> 16);
+    infoHeader[7] = (unsigned char)(width >> 24);
+    infoHeader[8] = (unsigned char)(height);
+    infoHeader[9] = (unsigned char)(height >> 8);
+    infoHeader[10] = (unsigned char)(height >> 16);
+    infoHeader[11] = (unsigned char)(height >> 24);
+    infoHeader[12] = (unsigned char)(1);
+    infoHeader[14] = (unsigned char)(bytesPerPixel * 8);
+
+    return infoHeader;
+}
+	//std::cout << "P3\n" << nx << " " << ny << "\n255\n";
+	//std::cout << ir << " " << ig << " " << ib << "\n";
 
 // x*x + 0.2*(x*x*x - x*x)
 // 0.2*x*x + 0.8*x*x*x
