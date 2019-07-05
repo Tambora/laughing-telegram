@@ -4,6 +4,7 @@
 #include "sphere.h"
 #include "hitable_list.h"
 #include "float.h"
+#include "bvh.h"
 #include "camera.h"
 #include "material.h"
 #include "bitmap.h"
@@ -51,14 +52,14 @@ hitable *random_scene() {
 	list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambert(vec3(0.4, 0.2, 0.1)));
 	list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
 
-	return new hitable_list(list, i);
+	return new bvh_node(list,i);
 }
 
 int main(int argc, char const *argv[]) {
 
     int w = 320; // width
     int h = 180; // height
-	int ns = 10; // samples
+	int ns = 50; // samples
     int red[w][h]; 
     int green[w][h];
     int blue[w][h];
