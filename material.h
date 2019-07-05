@@ -105,7 +105,8 @@ class dielectric : public material {
 		if(dot(r_in.direction(), rec.normal) > 0) { 
 			outward_normal = -rec.normal;
 			ni_over_nt = ref_idx;
-			cos = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length(); //???? // is length one?
+			cos = dot(r_in.direction(), rec.normal) / r_in.direction().length(); // len = 1???
+			cos = almostSqrt(1-ref_idx*ref_idx * (1-cos*cos));
 		} else {
 			outward_normal = rec.normal;
 			ni_over_nt = 1.0 / ref_idx;
