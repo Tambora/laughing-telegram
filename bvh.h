@@ -59,7 +59,7 @@ int box_z_compare (const void *a, const void *b) {
 }
 
 
-bvh_node::bvh_node(hitable **l, int n) { // TODO: need qsort "this method will be optimized later"
+bvh_node::bvh_node(hitable **l, int n) { // TODO: "this method will be optimized later"
 	int axis = int(3 * random());
 	switch (axis) {
 		case 0:

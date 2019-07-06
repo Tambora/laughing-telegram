@@ -57,12 +57,9 @@ hitable *random_scene() {
 
 int main(int argc, char const *argv[]) {
 
-    int w = 320; // width
-    int h = 180; // height
-	int ns = 50; // samples
-    int red[w][h]; 
-    int green[w][h];
-    int blue[w][h];
+    int w = 720; // width
+    int h = 480; // height
+	int ns = 25; // samples
 
     unsigned char img[h][w][bytesPerPixel];
 
@@ -94,6 +91,7 @@ int main(int argc, char const *argv[]) {
 	}
 
 	generateBitmapImage((unsigned char *)img, h, w, bytesPerPixel*w, "img.bmp");
+	free(img);
 	return 0;
 }
 

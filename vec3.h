@@ -2,6 +2,19 @@
 #include <stdlib.h>
 #include <iostream>
 
+inline float invSqrt(float x) {
+	float xhalf = 0.5f * x;
+	int i = *(int *)&x;				// store floating-point bits in integer
+	i = 0x5f3759df - (i >> 1);		// initial guess for Newton's method
+	x = *(float *)&i;				// convert new bits into float
+	x = x * (1.5f - xhalf * x * x); // One round of Newton's method
+	return x;
+}
+
+float almostSqrt(float x) {
+	return 1 / invSqrt(x);
+}
+
 inline uint32_t xor128(void) {
 	static uint32_t x = 123456789;
 	static uint32_t y = 362436069;
@@ -18,6 +31,7 @@ inline uint32_t xor128(void) {
 float random() {
 	return ((float) xor128()) / UINT_MAX;
 }
+
 
 class vec3 {
 public:
@@ -96,6 +110,10 @@ inline vec3 operator * (const vec3 &v, float t) {
 
 inline vec3 operator / (vec3 v, float t) {
 	return vec3(v.e[0]/t, v.e[1]/t, v.e[2]/t);
+} 
+
+inline vec3 operator / (float t, vec3 v) {
+	return vec3(t/v.e[0], t/v.e[1], t/v.e[2]);
 } 
 
 inline float dot(const vec3 &v1, const vec3 &v2) {
