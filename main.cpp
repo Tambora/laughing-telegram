@@ -3,33 +3,61 @@
 #include <string.h>
 #include "sphere.h"
 #include "hitable_list.h"
-#include "float.h"
 #include "bvh.h"
 #include "camera.h"
 #include "material.h"
 #include "bitmap.h"
+#include "rect.h"
+#include "box.h"
 
 
 
-vec3 color(const ray &r, hitable *world, int depth) {
-	hit_record rec;
-	if (world->hit(r, 0.001, FLT_MAX, rec)) {
-		ray scattered;
-		vec3 attenuation;  
-		if (depth < 500 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
-			return attenuation * color(scattered, world, depth + 1);
-		} else {
-			return vec3(0,0,0);
-		}
-	} else {
-		vec3 unit_direction = unit_vector(r.direction());
-		float t = 0.5 * (unit_direction.y() + 1.0);
-        return (1.0-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
-	}
+vec3 color(const ray& r, hitable *world, int depth) {
+    hit_record rec;
+    if (world->hit(r, 0.001, FLT_MAX, rec)) { 
+        ray scattered;
+        vec3 attenuation;
+        vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) 
+             return emitted + attenuation*color(scattered, world, depth+1);
+        else 
+            return emitted;
+    }
+    else 
+        return vec3(0,0,0); // black sky
+}
+
+hitable *cornell_box() {
+	hitable **list = new hitable*[8]; // says 6 here, but only 5 objects are passed
+	int i = 0;
+	material *red  	= new lambert (new solid_texture(vec3(0.65,0.05,0.05)));	
+	material *white	= new lambert (new solid_texture(vec3(0.73,0.73,0.73)));
+	material *green	= new lambert (new solid_texture(vec3(0.12,0.45,0.15)));
+	material *light	= new diffuse_light (new solid_texture(vec3(15,15,15)));
+    list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, green));
+    list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
+    list[i++] = new xz_rect(213, 343, 227, 332, 554, light);
+    list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, white));
+    list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
+    list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, white));
+    list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130,0,65));
+    list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white),  15), vec3(265,0,295));
+	return new bvh_node(list, i);
+}
+
+
+hitable *simple_light() {
+	texture *pertext = new noise_texture(2.5f);
+	hitable **list = new hitable*[3];
+	list[0] = new sphere(vec3(0,-1000,0), 1000, new lambert(pertext));
+	list[1] = new sphere(vec3(0,2,0), 2, new lambert(pertext));
+	list[2] = new sphere(vec3(0,7,0), 2, new diffuse_light(new solid_texture(vec3(4,4,4))));
+    //list[2] =  new xz_rect(3, 5, 1, 3, -2, new diffuse_light(new solid_texture(vec3(4,4,4))));
+   	return new bvh_node(list,3);
 }
 
 hitable *two_perlin_spheres() {
-	texture *pertext = new noise_texture(5);
+	texture *pertext = new noise_texture(2);
 	hitable **list = new hitable*[2];
 	list[0] = new sphere(vec3(0,-1000,0), 1000, new lambert(pertext));
 	list[1] = new sphere(vec3(0,2,0), 2, new lambert(pertext));
@@ -66,23 +94,26 @@ hitable *random_scene() {
 
 int main(int argc, char const *argv[]) {
 
-    int w = 720; // width
+    int w = 480; // width
     int h = 480; // height
-	int ns = 50; // samples
+	int ns = 100; // samples
 
     unsigned char img[h][w][bytesPerPixel];
 
 	hitable *world;
 	//world = random_scene();
-	world = two_perlin_spheres();
-    vec3 lookfrom(13,2,3);
-    vec3 lookat(0,0,0);
+	//world = two_perlin_spheres();
+	//world = simple_light();
+	world = cornell_box();
+    vec3 lookfrom(278,278,-800);
+    vec3 lookat(278,278,0);
 	float dist_to_focus = 10.0;
 	float aperture = 0.0;
-	camera cam(lookfrom, lookat, vec3(0,1,0), 20, float(w)/float(h), aperture, dist_to_focus);
+	float vfov = 40;
+	camera cam(lookfrom, lookat, vec3(0,1,0), vfov, float(w)/float(h), aperture, dist_to_focus);
 	for (int j = h - 1; j >= 0; j--) {
 		for (int i = 0; i < w; i++) {
-			vec3 col(0, 0, 0);
+			vec3 col(0,0,0);
 
 			for (int s = 0; s < ns; s++) {
 				float u = float(i + random()) / float(w);
@@ -93,10 +124,13 @@ int main(int argc, char const *argv[]) {
 			}
 
 			col /= float(ns);
-			col = vec3(almostSqrt(col[0]), almostSqrt(col[1]), almostSqrt(col[2])); // sqrt?
-			img[j][i][2] = (unsigned char)(int)(255 * col[0]);
-			img[j][i][1] = (unsigned char)(int)(255 * col[1]);
-			img[j][i][0] = (unsigned char)(int)(255 * col[2]);
+			col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+			col[0] = col[0] > 1 ? 1 : col[0];
+			col[1] = col[1] > 1 ? 1 : col[1];
+			col[2] = col[2] > 1 ? 1 : col[2];
+			img[j][i][2] = (unsigned char)(int)(col[0] * 255);
+			img[j][i][1] = (unsigned char)(int)(col[1] * 255);
+			img[j][i][0] = (unsigned char)(int)(col[2] * 255);
 		}
 	}
 

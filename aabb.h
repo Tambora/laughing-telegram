@@ -56,6 +56,7 @@ class aabb {
 
 
 inline bool aabb::hit(const ray &r, float tmin, float tmax) const { // replace loops with vec3
+																	// TODO: tmin and tmax?
 	float t0, t1, invD;
 	for (int i = 0; i < 3; i++) {
 	invD = 1.0f / r.direction()[i]; //rcp()

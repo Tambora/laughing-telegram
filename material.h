@@ -9,11 +9,11 @@
 struct hit_record;
 
 inline float schlick(float c, float ref_idx) {
-	float r0 = (1-ref_idx) / (1+ref_idx);
+	float r0 = (1 - ref_idx) / (1 + ref_idx);
 	r0 *= r0;
-	c = 1-c;
-	float cc = c*c;
-	return r0 + (1-r0) * c * cc * cc;
+	c = 1 - c;
+	float cc = c * c;
+	return r0 + (1 - r0) * c * cc * cc;
 }
 
 vec3 random_in_unit_sphere() {
@@ -31,19 +31,35 @@ vec3 reflect(const vec3 &v, const vec3 &n) {
 bool refract(const vec3 &v, const vec3 &n, float ni_over_nt, vec3 &refracted) {
 	vec3 uv = unit_vector(v);
 	float dt = dot(uv, n);
-	float discriminant = 1.0 - ni_over_nt * ni_over_nt * (1-dt*dt);
+	float discriminant = 1.0 - ni_over_nt * ni_over_nt * (1 - dt * dt);
 
 	if(discriminant > 0) {
-		refracted = ni_over_nt*(uv - n*dt) - n*almostSqrt(discriminant);
+		refracted = ni_over_nt * (uv - n * dt) - n * almostSqrt(discriminant);
 		return true;
-	} else 
+	} else
 		return false;
 }
 
 class material  {
   public:
 	virtual bool scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation, ray &scattered) const = 0;
+	virtual vec3 emitted(float u, float v, const vec3 &p) const {
+		return vec3(0, 0, 0);
+	}
 };
+
+class diffuse_light : public material  {
+  public:
+	diffuse_light(texture *a) : emit(a) {}
+	virtual bool scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation, ray &scattered) const {
+		return false;
+	}
+	virtual vec3 emitted(float u, float v, const vec3 &p) const {
+		return emit->value(u, v, p);
+	}
+	texture *emit;
+};
+
 
 class lambert : public material {
   public:
@@ -52,7 +68,7 @@ class lambert : public material {
 	virtual bool scatter(const ray &r_in, const hit_record &rec, vec3 &attenuation, ray &scattered) const  {
 		vec3 target = rec.p + rec.normal + random_in_unit_sphere();
 		scattered = ray(rec.p, target - rec.p);
-		attenuation = albedo -> value(0,0,rec.p);
+		attenuation = albedo -> value(0, 0, rec.p);
 		return true;
 	}
 	texture *albedo;
@@ -89,11 +105,11 @@ class dielectric : public material {
 		float reflect_prob;
 		float cos;
 
-		if(dot(r_in.direction(), rec.normal) > 0) { 
+		if(dot(r_in.direction(), rec.normal) > 0) {
 			outward_normal = -rec.normal;
 			ni_over_nt = ref_idx;
 			cos = dot(r_in.direction(), rec.normal) / r_in.direction().length(); // len = 1???
-			cos = almostSqrt(1-ref_idx*ref_idx * (1-cos*cos));
+			cos = almostSqrt(1 - ref_idx * ref_idx * (1 - cos * cos));
 		} else {
 			outward_normal = rec.normal;
 			ni_over_nt = 1.0 / ref_idx;

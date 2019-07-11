@@ -16,7 +16,7 @@ inline float perlin_interp(vec3 c[2][2][2], float u, float v, float w) {
 			}
 		}
 	}
-	return (accum + 1.0f)*0.5f;
+	return accum;//(accum + 1.0f)*0.5f;
 }
 
 class perlin {
@@ -37,6 +37,17 @@ class perlin {
 			}
 		}
 		return perlin_interp(c, u, v, w);
+	}
+	float turb(const vec3& p, int depth = 7) const {
+		float accum = 0;
+		vec3 temp = p;
+		float weight = 1.0;
+		for (int i = 0; i < depth; i++) {
+			accum += weight*noise(temp);
+			weight *= 0.5f;
+			temp *= 2;
+		}
+		return fabs(accum);
 	}
 	static vec3 *ranvec;
 	static int *perm_x;
