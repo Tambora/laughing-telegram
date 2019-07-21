@@ -49,6 +49,8 @@ class flip_normals : public hitable {
 	hitable *ptr;
 };
 
+
+
 class translate : public hitable {
   public:
 	translate(hitable *p, const vec3 &displacement) : ptr(p), offset(displacement) {}
@@ -136,10 +138,10 @@ bool rotate_y::hit(const ray &r, float tmin, float tmax, hit_record &rec) const 
 	if(ptr->hit(rotated_r, tmin, tmax, rec)) {
 		vec3 p = rec.p;
 		vec3 normal = rec.normal;
-		p[0] = cos_theta*rec.p[0] + sin_theta*rec.p[2];
-		p[2] = -sin_theta*rec.p[0] + cos_theta*rec.p[2];
-		normal[0] = cos_theta*rec.normal[0] + sin_theta*rec.normal[2];
-		normal[2] = -sin_theta*rec.normal[0] + cos_theta*rec.normal[2];
+		p[0] = cos_theta * rec.p[0] + sin_theta * rec.p[2];
+		p[2] = -sin_theta * rec.p[0] + cos_theta * rec.p[2];
+		normal[0] = cos_theta * rec.normal[0] + sin_theta * rec.normal[2];
+		normal[2] = -sin_theta * rec.normal[0] + cos_theta * rec.normal[2];
 		rec.p = p;
 		rec.normal = normal;
 		return true;
