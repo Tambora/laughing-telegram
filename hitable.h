@@ -1,7 +1,6 @@
 #ifndef HITABLEH
 #define HITABLEH
 
-#include "ray.h"
 #include "aabb.h"
 #include "float.h"
 
@@ -29,6 +28,12 @@ class hitable {
   public:
 	virtual bool hit(const ray &r, float tmin, float tmax, hit_record &rec) const = 0;
 	virtual bool bounding_box(aabb &box) const = 0;
+	virtual float  pdf_value(const vec3 &o, const vec3 &v) const  {
+		return 0.0;
+	}
+	virtual vec3 random(const vec3 &o) const {
+		return vec3(1, 0, 0);
+	}
 };
 
 

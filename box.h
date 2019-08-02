@@ -1,6 +1,7 @@
 #ifndef BOXH
 #define BOXH
 
+#include "rect.h"
 #include "hitable.h"
 
 class box : public hitable {

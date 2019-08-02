@@ -58,13 +58,13 @@ class perlin {
 static vec3 *perlin_generate() {
 	vec3 *p = new vec3[256];
 	for (int i = 0; i < 256; i++)
-		p[i] = unit_vector(vec3(2*random()-1, 2*random()-1, 2*random()-1));
+		p[i] = unit_vector(vec3(2*random0to1()-1, 2*random0to1()-1, 2*random0to1()-1));
 	return p;
 }
 
 void permute(int *p, int n) {
 	for (int i = n - 1; i > 0; i--) {
-		int target = int(random() * (i + 1));
+		int target = int(random0to1() * (i + 1));
 		int tmp = p[i];
 		p[i] = p[target];
 		p[target] = tmp;
