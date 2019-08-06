@@ -16,6 +16,8 @@ class aabb {
 	aabb(const vec3 &a, const vec3 &b) {
 		_min = a;
 		_max = b;
+		bounds[0] = a;
+		bounds[1] = b;
 	}
 	bool hit(const ray &r, float tmin, float tmax) const;
 	vec3 min() const {
@@ -26,6 +28,7 @@ class aabb {
 	}
 	vec3 _min;
 	vec3 _max;
+	vec3 bounds[2];
 };
 
 // inline bool aabb::hit(const ray &r, float tmin, float tmax) const { // replace loops with vec3
@@ -55,25 +58,27 @@ class aabb {
 // }
 
 
-inline bool aabb::hit(const ray &r, float tmin, float tmax) const { // replace loops with vec3
-																	// TODO: tmin and tmax?
-	float t0, t1, invD;
-	for (int i = 0; i < 3; i++) {
-	invD = 1.0f / r.direction()[i]; //rcp()
-		if (invD >= 0.0f) {
-			t0 = (min()[i] - r.origin()[i]) * invD;
-			t1 = (max()[i] - r.origin()[i]) * invD;
-		} else {
-			t1 = (min()[i] - r.origin()[i]) * invD;
-			t0 = (max()[i] - r.origin()[i]) * invD;
-		}
-		tmin = t0 > tmin ? t0 : tmin;
-		tmax = t1 < tmax ? t1 : tmax;
-		if (tmax <= tmin) {
-			return false;
-		}
-	}
-	return true;
+inline bool aabb::hit(const ray &r, float t0, float t1) const { // replace loops with vec3
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+	tmin = (bounds[r.sign[0]].x() - r.origin().x()) * r.invD.x();
+	tmax = (bounds[1 - r.sign[0]].x() - r.origin().x()) * r.invD.x();
+	tymin = (bounds[r.sign[1]].y() - r.origin().y()) * r.invD.y();
+	tymax = (bounds[1 - r.sign[1]].y() - r.origin().y()) * r.invD.y();
+	if ( (tmin > tymax) || (tymin > tmax) )
+		return false;
+	if (tymin > tmin)
+		tmin = tymin;
+	if (tymax < tmax)
+		tmax = tymax;
+	tzmin = (bounds[r.sign[2]].z() - r.origin().z()) * r.invD.z();
+	tzmax = (bounds[1 - r.sign[2]].z() - r.origin().z()) * r.invD.z();
+	if ( (tmin > tzmax) || (tzmin > tmax) )
+		return false;
+	if (tzmin > tmin)
+		tmin = tzmin;
+	if (tzmax < tmax)
+		tmax = tzmax;
+	return ( (tmin < t1) && (tmax > t0) );
 }
 
 
@@ -89,5 +94,4 @@ aabb surrounding_box(aabb box0, aabb box1) { // TODO: check if fmin/fmax -> ffmi
 
 
 #endif // AABBH
-
 

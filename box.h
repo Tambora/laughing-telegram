@@ -4,6 +4,8 @@
 #include "rect.h"
 #include "hitable.h"
 
+// TODO: include in pdf 
+
 class box : public hitable {
 public:
 	box(){}
